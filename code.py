@@ -65,6 +65,7 @@ class Deck_Turn:
 		if len(self.deck) == 0:
 			if len(self.turned) > 0:
 				self.deck = self.turned
+				self.turned = []
 				self.turn()
 		else:
 			size = len(self.deck)
@@ -83,9 +84,9 @@ class Deck_Turn:
 		if len(self.turned) == 0:
 			return None
 		else:
-			card = self.deck[-1]
+			card = self.turned[-1]
 			self.turned = self.turned[:-1]
-			return self.turned[-1]
+			return card
 
 	def print(self):
 		if len(self.turned) < 3:
@@ -140,6 +141,7 @@ class Game:
 		for i in range(7):
 			self.cols[i].turn()
 
+
 	def valid_col1_col2(self, col1, col2):
 		col_1 = self.cols[col1]
 		if col_1.top == None:
@@ -188,6 +190,26 @@ class Game:
 			card = col_1.take()
 			self.bank[card.suit].add_card(card)
 
+	def valid_deck_bank(self):
+		card = self.deck_turn.card()
+		if card == None:
+			return False
+		suit = card.suit
+		top = self.bank[suit].top
+		if top == None:
+			if card.val == 'A':
+				return True
+		else:
+			if card.num_val == top.num_val + 1:
+				return True
+		return False
+
+	def move_deck_bank(self):
+		if self.valid_deck_bank:
+			card = self.deck_turn.take()
+			suit = card.suit
+			self.bank[suit].add_card(card)
+
 	def check_win(self):
 		bank = self.bank
 		flag1 = bank['S'].complete()
@@ -200,6 +222,7 @@ class Game:
 
 	def print(self):
 		for i in range (7):
+			print('Col ' + str(i) +' - ', end='')
 			print('#' + str(len(self.cols[i].cards_hidden)-1) + '#: ', end='')
 			col = self.cols[i]
 			card = col.bot
@@ -223,20 +246,93 @@ class Game:
 
 		print('Bank:' + string)
 
+	def available_moves(self):
+		move_dict = {'col1_col2':[],'deck_col2':[],'col1_bank':[],'deck_bank':[]}
+		for col1 in range(7):
+			for col2 in range(7):
+				if self.valid_col1_col2(col1, col2):
+					move_dict['col1_col2'].append([col1,col2])
+		
+		for col2 in range(7):
+			if self.valid_deck_col2(col2):
+				move_dict['deck_col2'].append(col2)
+		
+		for col1 in range(7):
+			if self.valid_col1_bank(col1):
+				move_dict['col1_bank'].append(col1)
+		
+		if self.valid_deck_bank():
+			move_dict['deck_bank'].append(True)
+
+		return move_dict
+
+class Controller:
+	
+	def __init__(self):
+		pass
+	
+	def get_move(self, moves, game):
+		return move
+
+
+
+class Bridge:
+	
+	def __init__(self, controller):
+		self.game = None
+		self.controller = controller
+
+	def new_game(self):
+		self.game = Game()
+		self.game.deal()
+
+	def start(self):
+		while not self.game.check_win():
+			moves = self.game.available_moves()
+			move = self.controller.get_move(moves, self.game) #move[0] in 'col1_col2','deck_col2','col1_bank','deck_bank','turn'
+			if move[0] == 'turn':
+				self.game.deck_turn.turn()
+			elif move[0] == 'deck_bank':
+				self.game.move_deck_bank()
+			elif move[0] == 'col1_col2':
+				col1,col2 = moves['col1_col2'][move[1]]
+				self.game.move_col1_col2(col1,col2)
+			elif move[0] == 'deck_col2':
+				col2 = moves['deck_col2'][move[1]]
+				self.game.move_deck_col2(col2)
+			elif move[0] == 'col1_bank':
+				col1 = moves['col1_bank'][move[1]]
+				self.game.move_col1_bank(col1)
 
 
 
 
 
+	
+#================Controllers==============================#
 
-
-
-
-
-
-
-
-
+class Human_Player(Controller):
+	
+	def get_move(self, moves, game):
+		print('\n'*10)
+		game.print()
+		print('')
+		print('0 - Col to Col:' + str(moves['col1_col2']))
+		print('1 - Deck to Col:' + str(moves['deck_col2']))
+		print('2 - Col to Bank:' + str(moves['col1_bank']))
+		print('3 - Deck to Bank:' + str(len(moves['deck_bank'])))
+		print('4 - Turn Deck')
+		move_type = int(input('Choose Move Type: '))
+		if move_type in [0,1,2]:
+			move_choice = int(input('Choose Move: '))
+		else:
+			move_choice = 0
+		return [['col1_col2','deck_col2','col1_bank','deck_bank','turn'][move_type], move_choice]
+						
+			
+b = Bridge(Human_Player())
+b.new_game()
+b.start()
 
 
 		
