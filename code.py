@@ -18,6 +18,12 @@ class Card:
 		
 		return False
 
+	def print(self):
+		string = self.suit + '-' + self.val
+		if len(string) == 3:
+			string += ' '
+		return string
+
 class Column:
 	def __init__(self):
 		self.cards_hidden = [None]
@@ -33,9 +39,19 @@ class Column:
 
 	def turn(self):
 		card = self.cards_hidden[-1]
-		self.cards_hidden = self.cards_hidden[:-1]
+		if card != None:
+			self.cards_hidden = self.cards_hidden[:-1]
 		self.top = card
 		self.bot = card
+
+	def take(self):
+		card1 = self.bot
+		card2 = card1.on
+		if card2 != None:
+			self.bot = card2
+		else:
+			self.turn()
+		return card1
 
 class Deck_Turn:
 	def __init__(self):
@@ -70,6 +86,17 @@ class Deck_Turn:
 			card = self.deck[-1]
 			self.turned = self.turned[:-1]
 			return self.turned[-1]
+
+	def print(self):
+		if len(self.turned) < 3:
+			string = ''
+			for card in self.turned:
+				string += ' - ' + card.print()
+		else:
+			string = ''
+			for card in self.turned[-3:]:
+				string += ' - ' + card.print()
+		return string
 		
 
 class Bank_Col:
@@ -80,16 +107,18 @@ class Bank_Col:
 
 	def add_card(self, card):
 		self.cards.append(card)
+		card.on = self.top
 		self.top = card
 
 	def complete(self):
 		return len(self.cards) == 13
+		
 
 class Game:
 	def __init__(self):
 		self.cols = [Column() for i in range(7)]
 		self.deck = []
-		self.bank = [Bank_Col(suit) for suit in ['D','H','C','S']]
+		self.bank = {suit:Bank_Col(suit) for suit in ['D','H','C','S']}
 		self.deck_turn = Deck_Turn()
 		for suit in ['H','D','C','S']:
 			for val in ['A','2','3','4','5','6','7','8','9','10','J','Q','K','A']:
@@ -101,12 +130,15 @@ class Game:
 		deck_point = 0
 		for i in range(7):
 			for j in range(i+1):
-				self.cols.deal(self.deck[deck_point])
+				self.cols[i].deal(self.deck[deck_point])
 				deck_point += 1
 
 		while deck_point < 52:
 			self.deck_turn.deal(self.deck[deck_point])
 			deck_point += 1
+
+		for i in range(7):
+			self.cols[i].turn()
 
 	def valid_col1_col2(self, col1, col2):
 		col_1 = self.cols[col1]
@@ -138,7 +170,74 @@ class Game:
 
 	def valid_col1_bank(self, col1):
 		col_1 = self.cols[col1]
-		#continue from here
+		card = col_1.bot
+		if card != None:
+			suit = card.suit
+			top = self.bank[suit].top
+			if top == None:
+				if card.val == 'A':
+					return True
+			else:
+				if card.num_val == top.num_val + 1:
+					return True
+		return False
+
+	def move_col1_bank(self, col1):
+		if self.valid_col1_bank(col1):
+			col_1 = self.cols[col1]
+			card = col_1.take()
+			self.bank[card.suit].add_card(card)
+
+	def check_win(self):
+		bank = self.bank
+		flag1 = bank['S'].complete()
+		flag2 = bank['C'].complete()
+		flag3 = bank['H'].complete()
+		flag4 = bank['D'].complete()
+		if flag1 and flag2 and flag3 and flag4:
+			return True
+		return False
+
+	def print(self):
+		for i in range (7):
+			print('#' + str(len(self.cols[i].cards_hidden)-1) + '#: ', end='')
+			col = self.cols[i]
+			card = col.bot
+			string = ''
+			while card != None:
+				string = card.print() + ' - ' + string 
+				card = card.on
+			print(string)
+			print('')
+
+		print('')
+		print('Deck:' + self.deck_turn.print(), end='  ')
+
+		string = ''
+		for suit in ['C','D','S','H']:
+			card = self.bank[suit].top
+			if card == None:
+				string += '-  -'
+			else:
+				string += card.print()
+
+		print('Bank:' + string)
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+		
 
