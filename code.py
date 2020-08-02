@@ -1,4 +1,5 @@
 import random
+import copy
 
 class Card:
 	def __init__(self, suit, val):
@@ -122,9 +123,11 @@ class Game:
 		self.deck = []
 		self.bank = {suit:Bank_Col(suit) for suit in ['D','H','C','S']}
 		self.deck_turn = Deck_Turn()
+		self.turn_count = 0 #used for winnable calcs
 		for suit in ['H','D','C','S']:
 			for val in ['A','2','3','4','5','6','7','8','9','10','J','Q','K']:
 				self.deck.append(Card(suit, val))
+		self.deal()
 
 
 	def deal(self):
@@ -267,6 +270,63 @@ class Game:
 
 		return move_dict
 
+	def winnable(self):
+		if self.check_win():
+			return True
+		if self.turn_count > 19:
+			return False
+		moves = self.available_moves()
+	
+		col_col_flag = False
+		for move in moves['col1_col2']:
+			col_col_game = copy.deepcopy(self)
+			col_col_game.move_col1_col2(move[0], move[1])
+			col_col_game.turn_count = 0
+			col_col_flag = col_col_flag or col_col_game.winnable()
+
+		if col_col_flag:
+			return True
+
+		deck_col_flag = False
+		for move in moves['deck_col2']:
+			deck_col_game = copy.deepcopy(self)
+			deck_col_game.move_deck_col2(move)
+			deck_col_game.turn_count = 0
+			deck_col_flag = deck_col_flag or deck_col_game.winnable()
+
+		if deck_col_flag:
+			return True
+
+		col_bank_flag = False
+		for move in moves['col1_bank']:
+			col_bank_game = copy.deepcopy(self)
+			col_bank_game.move_col1_bank(move)
+			col_bank_game.turn_count = 0
+			col_bank_flag = col_bank_flag or col_bank_game.winnable()
+
+		if col_bank_flag:
+			return True	
+
+		deck_bank_flag = False
+		for move in moves['deck_bank']:
+			deck_bank_game = copy.deepcopy(self)
+			deck_bank_game.move_deck_bank()
+			deck_bank_game.turn_count = 0
+			deck_bank_flag = deck_bank_flag or deck_bank_game.winnable()
+	
+		if deck_bank_flag:
+			return True
+
+
+		turn_game = copy.deepcopy(self)
+		turn_game.deck_turn.turn()
+		turn_game.turn_count += 1
+		turn_flag = turn_game.winnable()
+		return turn_flag
+		#something not working here... hmmmmmmmm...
+
+		
+
 class Controller:
 	
 	def __init__(self):
@@ -308,7 +368,19 @@ class Bridge:
 				return False
 		return True
 
+#===============Functions===================================#
 
+def winrate(controller):
+	counter = 0
+	for i in range (10000):
+		b = Bridge(controller)
+		b.new_game()
+		result = b.start()
+	if result:
+		counter += 1
+	print(i,end='\r')
+	print('')
+	print(counter)
 
 
 	
@@ -332,13 +404,11 @@ class Human_Player(Controller):
 			move_choice = 0
 		return [['col1_col2','deck_col2','col1_bank','deck_bank','turn'][move_type], move_choice]
 
-class Controller_AI_1(Controller):
+class Controller_AI_1(Controller): #2777/10000
 	def __init__(self):
 		self.turn_count = 0	
 
 	def get_move(self, moves, game):
-		print('\n'*10)
-		game.print()
 		if len(moves['col1_col2']) > 0:
 			self.turn_count = 0
 			return ['col1_col2', -1]
@@ -357,15 +427,8 @@ class Controller_AI_1(Controller):
 				return ['turn',0]
 			else:
 				return ['surrender',0]
-			
-b = Bridge(Controller_AI_1())
-b.new_game()
-b.start()
-
-'''
-Ace of clubs randomly appeared in deck after being used...
 
 
-'''
+
 		
 
