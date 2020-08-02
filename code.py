@@ -123,7 +123,7 @@ class Game:
 		self.bank = {suit:Bank_Col(suit) for suit in ['D','H','C','S']}
 		self.deck_turn = Deck_Turn()
 		for suit in ['H','D','C','S']:
-			for val in ['A','2','3','4','5','6','7','8','9','10','J','Q','K','A']:
+			for val in ['A','2','3','4','5','6','7','8','9','10','J','Q','K']:
 				self.deck.append(Card(suit, val))
 
 
