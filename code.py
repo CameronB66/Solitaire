@@ -47,6 +47,7 @@ class Column:
 	def take(self):
 		card1 = self.bot
 		card2 = card1.on
+		card1.on = None
 		if card2 != None:
 			self.bot = card2
 		else:
@@ -303,7 +304,9 @@ class Bridge:
 			elif move[0] == 'col1_bank':
 				col1 = moves['col1_bank'][move[1]]
 				self.game.move_col1_bank(col1)
-
+			elif move[0] == 'surrender':
+				return False
+		return True
 
 
 
@@ -328,12 +331,41 @@ class Human_Player(Controller):
 		else:
 			move_choice = 0
 		return [['col1_col2','deck_col2','col1_bank','deck_bank','turn'][move_type], move_choice]
-						
+
+class Controller_AI_1(Controller):
+	def __init__(self):
+		self.turn_count = 0	
+
+	def get_move(self, moves, game):
+		print('\n'*10)
+		game.print()
+		if len(moves['col1_col2']) > 0:
+			self.turn_count = 0
+			return ['col1_col2', -1]
+		elif len(moves['deck_col2']) > 0:
+			self.turn_count = 0
+			return ['deck_col2', 0]
+		elif len(moves['col1_bank']) > 0:
+			self.turn_count = 0
+			return ['col1_bank', 0]
+		elif len(moves['deck_bank']) > 0:
+			self.turn_count = 0
+			return ['deck_bank',0]
+		else:
+			self.turn_count += 1
+			if self.turn_count < 20:
+				return ['turn',0]
+			else:
+				return ['surrender',0]
 			
-b = Bridge(Human_Player())
+b = Bridge(Controller_AI_1())
 b.new_game()
 b.start()
 
+'''
+Ace of clubs randomly appeared in deck after being used...
 
+
+'''
 		
 
